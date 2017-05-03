@@ -5,17 +5,18 @@ var context;
 var sourceNode;
 var gainNode;
 var analyser;
-var buffer;
-var jsNode;
 var splitter;
-var reset = true;
-function init(path, initWorlds) {
+
+// var bigthief = require('./audio/')
+
+function init() {
   if (! window.AudioContext) { // check if the default naming is enabled, if not use the chrome one.
       if (! window.webkitAudioContext) alert('no audiocontext found');
       window.AudioContext = window.webkitAudioContext;
   }
   context = new AudioContext();
-  loadSound(path, initWorlds);
+  setupAudioNodes();
+  loadSound("audio/bigthief.mp3");
 }
 
 // load the specified sound
@@ -25,28 +26,16 @@ function loadSound(url) {
   request.responseType = 'arraybuffer';
   request.onload = function() {
     context.decodeAudioData(request.response, function(buffer) {
-      if(!buffer) {
-          // Error decoding file data
-          return;
-      }
-      sourceNode = context.createBufferSource();
-      sourceNode.buffer = buffer;
-
-      analyser = context.createAnalyser();
-      analyser.smoothingTimeConstant = 0.3;
-      analyser.fftSize = 2048;
-
-      sourceNode.connect(analyser);
-
-      gainNode = context.createGain();
-      sourceNode.connect(gainNode);
-      gainNode.connect(context.destination);
-      reset = true;
-
-      playing = true;
+      playSound(buffer);
     }, (e) => {console.log(e)});
   }
   request.send();
+}
+
+function playSound(buffer) {
+  sourceNode.buffer = buffer;
+  sourceNode.start(0);
+  playing = true;
 }
 
 function stopSound() {
@@ -66,14 +55,29 @@ function isPlaying() {
   return playing;
 }
 
-function setMusic(name, updateAnalysers) {
+function setMusic(name) {
   stopSound();
-  playOnLoad('./audio/' + name + '.mp3', updateAnalysers);
+  setupAudioNodes();
+  loadSound('./audio/' + name + '.mp3');
 }
 
-function playSound() {
-  sourceNode.start(0);
-  playing = true;
+function setupAudioNodes() {
+  sourceNode = context.createBufferSource();
+  // sourceNode.connect(context.destination);
+
+  // jsNode = context.createScriptProcessor(2048, 1, 1); //ScriptProcessorNode
+
+  analyser = context.createAnalyser();
+  analyser.smoothingTimeConstant = 0.3;
+  analyser.fftSize = 2048;
+
+  // splitter = context.createChannelSplitter(); // splits into left and right stream
+
+  sourceNode.connect(analyser);
+
+  gainNode = context.createGain();
+  sourceNode.connect(gainNode);
+  gainNode.connect(context.destination);
 }
 
 function getAverageVolume(array) {
@@ -107,17 +111,16 @@ function detectPitch() {
 // Calculated based on the pitch of the audio
 function getColorFromSound(oldColor) {
   var color = oldColor;
-    var pitch = detectPitch();
+    var pitch = detectPitch()
     if (pitch) {
-      var hex = Math.floor(pitch).toString(16);
-      hex = ("000" + hex).substr(-3);
-      color = new THREE.Color("#" + hex);
+      var hex = Math.floor(pitch).toString(16)
+      hex = ("000" + hex).substr(-3)
+      color = new THREE.Color("#" + hex)
 
-      var r = 0.8 * oldColor.r + 0.2 * color.r;
-      var g = 0.8 * oldColor.g + 0.2 * color.g;
-      var b = 0.8 * oldColor.b + 0.2 * color.b;
-      color = new THREE.Color(r,g,b);
-      // console.log(color);
+      var r = 0.8 * oldColor.r + 0.2 * color.r
+      var g = 0.8 * oldColor.g + 0.2 * color.g
+      var b = 0.8 * oldColor.b + 0.2 * color.b
+      color = new THREE.Color(r,g,b)
     }
   return color;
 }
@@ -127,11 +130,8 @@ function getRateFromSound() {
   return 0;
 }
 
+
 export default {
-  playSound: playSound,
-  getAnalyser: getAnalyser,
-  getSourceJS: getSourceJS,
-  getArray: getArray,
   init: init,
   mute: mute,
   unmute: unmute,

@@ -18,11 +18,11 @@ module.exports = {
       {
         test: /\.glsl$/,
         loader: "webpack-glsl"
-      },
+      }
     ]
   },
   devtool: 'source-map',
   devServer: {
-    port: 7000
+    port: 8080
   }
 }
