@@ -1,133 +1,148 @@
-const THREE = require('three');
+const THREE = require('three')
+import { analyze, guess } from 'web-audio-beat-detector';
 import pitchHelper from './pitchHelper'
-var playing = false;
-var context;
-var sourceNode;
-var gainNode;
-var analyser;
-var splitter;
-
-// var bigthief = require('./audio/')
+var playing = false
+var context
+var sourceNode
+var gainNode
+var analyser
+var splitter
+var tempo
 
 function init() {
   if (! window.AudioContext) { // check if the default naming is enabled, if not use the chrome one.
-      if (! window.webkitAudioContext) alert('no audiocontext found');
-      window.AudioContext = window.webkitAudioContext;
+      if (! window.webkitAudioContext) alert('no audiocontext found')
+      window.AudioContext = window.webkitAudioContext
   }
-  context = new AudioContext();
-  setupAudioNodes();
-  loadSound("audio/bigthief.mp3");
+  context = new AudioContext()
+  setupAudioNodes()
+  loadSound("audio/bigthief.mp3")
 }
 
-// load the specified sound
 function loadSound(url) {
-  var request = new XMLHttpRequest();
-  request.open('GET', url, true);
-  request.responseType = 'arraybuffer';
+  var request = new XMLHttpRequest()
+  request.open('GET', url, true)
+  request.responseType = 'arraybuffer'
   request.onload = function() {
     context.decodeAudioData(request.response, function(buffer) {
-      playSound(buffer);
-    }, (e) => {console.log(e)});
+      playSound(buffer)
+    }, (e) => {console.log(e)})
   }
-  request.send();
+  request.send()
 }
 
 function playSound(buffer) {
-  sourceNode.buffer = buffer;
-  sourceNode.start(0);
-  playing = true;
+  sourceNode.buffer = buffer
+  sourceNode.start(0)
+  playing = true
 }
 
 function stopSound() {
-  sourceNode.stop();
-  playing = false;
+  sourceNode.stop()
+  playing = false
 }
 
-function mute() {
-  gainNode.gain.value = 0;
-}
+function mute() { gainNode.gain.value = 0 }
 
-function unmute(){
-  gainNode.gain.value = 1;
-}
+function unmute() { gainNode.gain.value = 1 }
 
-function isPlaying() {
-  return playing;
-}
-
-function setMusic(name) {
-  stopSound();
-  setupAudioNodes();
-  loadSound('./audio/' + name + '.mp3');
-}
+function isPlaying() { return playing }
 
 function setupAudioNodes() {
-  sourceNode = context.createBufferSource();
+  sourceNode = context.createBufferSource()
   // sourceNode.connect(context.destination);
 
   // jsNode = context.createScriptProcessor(2048, 1, 1); //ScriptProcessorNode
 
-  analyser = context.createAnalyser();
-  analyser.smoothingTimeConstant = 0.3;
-  analyser.fftSize = 2048;
+  analyser = context.createAnalyser()
+  analyser.smoothingTimeConstant = 0.3
+  analyser.fftSize = 2048
 
   // splitter = context.createChannelSplitter(); // splits into left and right stream
 
-  sourceNode.connect(analyser);
+  sourceNode.connect(analyser)
 
-  gainNode = context.createGain();
-  sourceNode.connect(gainNode);
-  gainNode.connect(context.destination);
+  gainNode = context.createGain()
+  sourceNode.connect(gainNode)
+  gainNode.connect(context.destination)
 }
 
 function getAverageVolume(array) {
-   var values = 0;
-   for (var i = 0; i < array.length; i++) {
-     values += array[i];
-   }
-   return values / array.length;
+   var values = 0
+   for (var i = 0; i < array.length; i++) { values += array[i] }
+   return values / array.length
 }
 
 // Calculated based on the volume / amplitude
 function getSizeFromSound() {
-  var arr =  new Uint8Array(analyser.frequencyBinCount);
-  analyser.getByteFrequencyData(arr);
-  return getAverageVolume(arr);
+  var arr =  new Uint8Array(analyser.frequencyBinCount)
+  analyser.getByteFrequencyData(arr)
+  return getAverageVolume(arr)
 }
 
 
 function detectPitch() {
-	var buffer = new Uint8Array(analyser.fftSize);
-	analyser.getByteTimeDomainData(buffer);
+	var buffer = new Uint8Array(analyser.fftSize)
+	analyser.getByteTimeDomainData(buffer)
 
-	var fundamentalFreq = pitchHelper.findFundamentalFreq(buffer,context.sampleRate);
+	var fundFreq = pitchHelper.findFundamentalFreq(buffer, context.sampleRate)
 
-	if (fundamentalFreq !== -1) {
-    return fundamentalFreq
-  }
+	if (fundFreq) return fundFreq
+}
+
+function colorChange(c1, c2, hi, lo) {
+  var dr = Math.abs(c1.r - c2.r)
+  var dg = Math.abs(c1.g - c2.g)
+  var db = Math.abs(c1.b - c2.b)
+  return (dr < hi) & (dr > lo) & (dg < hi) & (dg > lo) & (db < hi) & (db > lo)
 }
 
 // Returns a new color based on the given color
 // Calculated based on the pitch of the audio
 function getColorFromSound(oldColor) {
-  var color = oldColor;
+  var color = oldColor
     var pitch = detectPitch()
     if (pitch) {
       var hex = Math.floor(pitch).toString(16)
       hex = ("000" + hex).substr(-3)
       color = new THREE.Color("#" + hex)
 
-      var r = 0.8 * oldColor.r + 0.2 * color.r
-      var g = 0.8 * oldColor.g + 0.2 * color.g
-      var b = 0.8 * oldColor.b + 0.2 * color.b
-      color = new THREE.Color(r,g,b)
+      var brt = 0.6   // Brightness
+      var lgt = 0.35  // Lightness
+      var i   = 0.2   // Lerp index
+      var hi  = 1.0   // Color change upper bound
+      var lo  = 0.0   // Color change lower bound
+      var red = 0.1   // Red three-orbit-control
+      var yel = 0.01
+
+      color.r = ((1 - i) * oldColor.r + i * color.r) * brt + lgt
+      color.g = ((1 - i) * oldColor.g + i * color.g) * brt + lgt
+      color.b = ((1 - i) * oldColor.b + i * color.b) * brt + lgt
+
+      color.r += red
+      color.b -= yel
+
+      if (!colorChange(oldColor, color, hi, lo)) {
+        color = oldColor
+      }
     }
   return color;
 }
 
+// Detects the bpm and returns it (tempo)
+// Only needs to be called once per song
+function detectBeat() {
+  analyze(sourceNode.buffer)
+    .then( (tmp) => {
+        console.log("Tempo: "  + tmp)
+        tempo = tmp
+        return tmp
+    })
+    .catch((err) => { console.log(err) })
+}
+
 function getRateFromSound() {
-  //TODO: implement according to bpm
-  return 0;
+  return tempo
 }
 
 
@@ -135,7 +150,6 @@ export default {
   init: init,
   mute: mute,
   unmute: unmute,
-  setMusic: setMusic,
   isPlaying: isPlaying,
   getSizeFromSound: getSizeFromSound,
   getColorFromSound: getColorFromSound,

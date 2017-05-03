@@ -25,6 +25,8 @@ function onLoad(framework) {
   directionalLight.position.multiplyScalar(10);
   scene.add(directionalLight);
 
+  scene.background = new THREE.Color('fff')
+
   // var backLight = new THREE.DirectionalLight( 0xffffff, 1 );
   // backLight.color.setHSL(0.1, 1, 0.95);
   // backLight.position.set(1, 1, -2);
@@ -48,13 +50,13 @@ function onLoad(framework) {
 }
 
 function onUpdate(framework) {
-
-  // if (Audio.isPlaying()) {
-  //   var size = Audio.getSizeFromSound();
-  //   var bg = scene.background ? scene.background : new THREE.Color(0,0,0);
-  //   var color = Audio.getColorFromSound(bg);
-  //   scene.background = color;
-  // }
+  // TODO: Create a way to lerp between color changes
+  if (Audio.isPlaying()) {
+    var size = Audio.getSizeFromSound();
+    var bg = scene.background ? scene.background : new THREE.Color(0,0,0);
+    var color = Audio.getColorFromSound(bg);
+    scene.background = color;
+  }
 }
 
 // when the scene is done initializing, it will call onLoad, then on frame updates, call onUpdate
