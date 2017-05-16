@@ -108,11 +108,11 @@ function getColorFromSound(oldColor) {
       color = new THREE.Color("#" + hex)
 
       var brt = 0.6   // Brightness
-      var lgt = 0.35  // Lightness
-      var i   = 0.2   // Lerp index
+      var lgt = 0.4   // Lightness
+      var i   = 0.1   // Lerp index
       var hi  = 1.0   // Color change upper bound
       var lo  = 0.0   // Color change lower bound
-      var red = 0.1   // Red three-orbit-control
+      var red = 0.1
       var yel = 0.01
 
       color.r = ((1 - i) * oldColor.r + i * color.r) * brt + lgt

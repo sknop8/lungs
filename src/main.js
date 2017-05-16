@@ -1,21 +1,27 @@
 
-const THREE = require('three'); // older modules are imported like this. You shouldn't have to worry about this much
+const THREE = require('three');
+const EffectComposer = require('three-effectcomposer')(THREE)
 import Framework from './framework'
 import Audio from './audio'
+import Sparkle from './postprocessing/sparkle'
 
 var clock = new THREE.Clock(false);
 
-// scene nodes
-var scene;
-var camera;
-var directionalLight;
+var scene
+var camera
+var renderer
+var directionalLight
 
-var audioControl = { 'mute': false };
+var composer
+var allPost = [Sparkle]
+var currentPost = []
+
+var audioControl = { 'mute': true };
 
 function onLoad(framework) {
   scene = framework.scene;
   camera = framework.camera;
-  var renderer = framework.renderer;
+  renderer = framework.renderer;
   var gui = framework.gui;
   var stats = framework.stats;
 
@@ -25,13 +31,7 @@ function onLoad(framework) {
   directionalLight.position.multiplyScalar(10);
   scene.add(directionalLight);
 
-  scene.background = new THREE.Color('fff')
-
-  // var backLight = new THREE.DirectionalLight( 0xffffff, 1 );
-  // backLight.color.setHSL(0.1, 1, 0.95);
-  // backLight.position.set(1, 1, -2);
-  // backLight.position.multiplyScalar(10);
-  // scene.add(backLight);
+  scene.background = new THREE.Color(1, 1, 1)
 
   camera.position.set(0, 0, -10);
   camera.lookAt(new THREE.Vector3(0, 0, camera.position.z - 20));
@@ -39,25 +39,63 @@ function onLoad(framework) {
 
   Audio.init();
 
+  if (audioControl.mute) Audio.mute()
+
   gui.add(audioControl, 'mute').onChange(function(newVal) {
-    if (newVal) {
-      Audio.mute()
-    } else {
-      Audio.unmute()
-    }
+    if (newVal) { Audio.mute() } else { Audio.unmute() }
   })
 
+  currentPost = [ Sparkle ]
+  setPostProcessing()
+
+  clock.start()
 }
+
+function setPostProcessing(shaders) {
+  for (var s in allPost) { allPost[s].turnOff() }
+  composer = new EffectComposer(renderer);
+  var renderPass = new EffectComposer.RenderPass(scene, camera);
+  composer.addPass(renderPass);
+  for (var s in currentPost) {
+    currentPost[s].turnOn();
+    var pass = currentPost[s].shader;
+    pass.renderToScreen = true;
+    composer.addPass(pass);
+  }
+  render();
+}
+
+function render() {
+  composer.render()
+  requestAnimationFrame(render)
+}
+
+function cosine_interp(a, b, t) {
+  var cos_t = (1 - Math.cos(t * Math.PI)) * 0.5
+  return a * (1 - cos_t) + b * cos_t
+}
+
+var oldBgColor
+var bgColor
+var c
 
 function onUpdate(framework) {
-  // TODO: Create a way to lerp between color changes
+  clock.getDelta()
+  var time = clock.elapsedTime
+
   if (Audio.isPlaying()) {
-    var size = Audio.getSizeFromSound();
-    var bg = scene.background ? scene.background : new THREE.Color(0,0,0);
-    var color = Audio.getColorFromSound(bg);
-    scene.background = color;
+    var size = Audio.getSizeFromSound()
+
+    var fract = time % 1
+    if (Math.floor(fract * 10) % 4  == 0) {
+      var bg = scene.background ? scene.background : new THREE.Color(1, 1, 1)
+      scene.background = Audio.getColorFromSound(bg)
+    }
+
+    Sparkle.shader.material.uniforms.size.value = size
   }
+
+  Sparkle.shader.material.uniforms.time.value = time
 }
 
-// when the scene is done initializing, it will call onLoad, then on frame updates, call onUpdate
 Framework.init(onLoad, onUpdate);
