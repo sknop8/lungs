@@ -16,7 +16,7 @@ var composer
 var allPost = [Sparkle]
 var currentPost = []
 
-var audioControl = { 'mute': true };
+var audioControl = { 'mute': false };
 
 function onLoad(framework) {
   scene = framework.scene;
