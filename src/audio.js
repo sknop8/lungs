@@ -14,9 +14,13 @@ function init() {
       if (! window.webkitAudioContext) alert('no audiocontext found')
       window.AudioContext = window.webkitAudioContext
   }
+  
   context = new AudioContext()
+  console.log({context})
   setupAudioNodes()
   loadSound("audio/bigthief.mp3")
+
+  
 }
 
 function loadSound(url) {
@@ -26,6 +30,8 @@ function loadSound(url) {
   request.onload = function() {
     context.decodeAudioData(request.response, function(buffer) {
       playSound(buffer)
+      context.resume();
+      console.log(context)
     }, (e) => {console.log(e)})
   }
   request.send()
@@ -145,13 +151,27 @@ function getRateFromSound() {
   return tempo
 }
 
+function resumeContext() {
+  context.resume();
+}
+
+function suspendContext() {
+  context.suspend();
+}
+
+function contextState() {
+  return context.state;
+}
 
 export default {
-  init: init,
-  mute: mute,
-  unmute: unmute,
-  isPlaying: isPlaying,
-  getSizeFromSound: getSizeFromSound,
-  getColorFromSound: getColorFromSound,
-  getRateFromSound: getRateFromSound
+  init,
+  mute,
+  unmute,
+  isPlaying,
+  getSizeFromSound,
+  getColorFromSound,
+  getRateFromSound,
+  contextState,
+  resumeContext,
+  suspendContext
 }
