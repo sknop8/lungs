@@ -109,6 +109,9 @@
 	  setPostProcessing();
 	
 	  clock.start();
+	
+	  // Suspend context initially
+	  _audio2.default.suspendContext();
 	}
 	
 	// The AudioContext will only start once the user clicks on the page
@@ -156,7 +159,7 @@
 	  clock.getDelta();
 	  var time = clock.elapsedTime;
 	
-	  if (_audio2.default.isPlaying()) {
+	  if (_audio2.default.isPlaying() && _audio2.default.contextState() === 'running') {
 	    var size = _audio2.default.getSizeFromSound();
 	
 	    var fract = time % 1;
