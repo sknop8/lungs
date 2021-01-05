@@ -49,6 +49,8 @@ function onLoad(framework) {
   setPostProcessing()
 
   clock.start()
+
+  getAudioContext().resume();
 }
 
 function setPostProcessing(shaders) {
