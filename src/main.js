@@ -50,6 +50,9 @@ function onLoad(framework) {
   setPostProcessing()
 
   clock.start()
+
+  // Suspend context initially
+  Audio.suspendContext();
 }
 
 // The AudioContext will only start once the user clicks on the page
@@ -97,7 +100,7 @@ function onUpdate(framework) {
   clock.getDelta()
   var time = clock.elapsedTime
 
-  if (Audio.isPlaying()) {
+  if (Audio.isPlaying() && Audio.contextState() === 'running') {
     var size = Audio.getSizeFromSound()
 
     var fract = time % 1
