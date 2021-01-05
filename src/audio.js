@@ -16,11 +16,8 @@ function init() {
   }
   
   context = new AudioContext()
-  console.log({context})
   setupAudioNodes()
   loadSound("audio/bigthief.mp3")
-
-  
 }
 
 function loadSound(url) {
@@ -30,8 +27,6 @@ function loadSound(url) {
   request.onload = function() {
     context.decodeAudioData(request.response, function(buffer) {
       playSound(buffer)
-      context.resume();
-      console.log(context)
     }, (e) => {console.log(e)})
   }
   request.send()
